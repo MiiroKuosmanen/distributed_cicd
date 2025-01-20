@@ -1,0 +1,15 @@
+[package]
+name = "distributed-ci-cd"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = [
+    "client",
+    "coordinator",
+    "worker",
+    "shared"
+]
+[workspace.dependencies]
+tokio = { version = "1.43.0", features = ["full"] }
+serde = { version = "1.0.217", features = ["derive"] }
