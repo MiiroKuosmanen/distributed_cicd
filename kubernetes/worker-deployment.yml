@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: cicd
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: maso778/worker:latest
+          imagePullPolicy: Always # Ensure Kubernetes pulls the latest version
+          ports:
+            - containerPort: 5001
+          env:
+            - name: WORKER_PORT
+              value: "5001"
+          readinessProbe: # ✅ Readiness probe to ensure worker is ready
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe: # ✅ Liveness probe to check if worker is alive
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 20

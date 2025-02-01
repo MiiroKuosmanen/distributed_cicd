@@ -8,7 +8,43 @@ use redis::Commands;
 use reqwest::Client;
 
 
-pub async fn build_task(Extension(state): Extension<SharedState>, Json(payload): Json<Task>,) -> impl IntoResponse {
+pub async fn build_task(
+    Extension(state): Extension<SharedState>,
+    Json(payload): Json<Task>,
+) -> impl IntoResponse {
+    let worker_url = "http://worker:5001/execute_task"; // Use Kubernetes service
+
+    let mut clock = state.clock.lock().await;
+    clock.increment();
+    println!("Logical time is now: {}", clock.get_time());
+
+    let client = Client::new();
+    let response = client.post(worker_url).json(&payload).send().await;
+
+    match response {
+        Ok(res) => {
+            if res.status().is_success() {
+                println!("Task submitted successfully to {}", worker_url);
+                let result: TaskResult = res.json().await.unwrap();
+                (StatusCode::OK, Json(result)).into_response()
+            } else {
+                (
+                    StatusCode::BAD_GATEWAY,
+                    format!("Worker failed with status: {}", res.status()),
+                )
+                    .into_response()
+            }
+        }
+        Err(err) => (
+            StatusCode::BAD_GATEWAY,
+            format!("Failed to connect to worker: {}", err),
+        )
+            .into_response(),
+    }
+}
+
+
+pub async fn build_task2(Extension(state): Extension<SharedState>, Json(payload): Json<Task>,) -> impl IntoResponse {
     let workers = vec![
         "http://worker1:5001/execute_task", // Worker 1
         "http://worker2:5002/execute_task", // Worker 2

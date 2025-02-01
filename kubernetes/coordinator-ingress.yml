@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: coordinator-ingress
+  namespace: cicd
+spec:
+  rules:
+    - host: cicd.local # Change to your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: coordinator
+                port:
+                  number: 3000

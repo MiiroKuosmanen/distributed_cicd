@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coordinator
+  namespace: cicd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coordinator
+  template:
+    metadata:
+      labels:
+        app: coordinator
+    spec:
+      containers:
+        - name: coordinator
+          image: maso778/coordinator:latest # Update with your image
+          imagePullPolicy: Always # Ensure Kubernetes pulls the latest version
+          ports:
+            - containerPort: 3000
+          env:
+            - name: WORKER_URL
+              value: "http://worker:5001/execute_task"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coordinator
+  namespace: cicd
+spec:
+  selector:
+    app: coordinator
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP # Internal Service

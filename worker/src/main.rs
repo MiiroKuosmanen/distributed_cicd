@@ -1,13 +1,13 @@
 use axum::{
     extract::Json,
-    routing::post,
+    routing::{post, get},
     Router,
 };
 use serde::{Deserialize, Serialize};
-use std::{net::SocketAddr};
+use std::net::SocketAddr;
 use tokio::time::{sleep, Duration};
-use axum::serve::WithGracefulShutdown;
 use tokio::net::TcpListener;
+
 #[derive(Debug, Deserialize)]
 struct Task {
     id: u32,
@@ -24,19 +24,17 @@ struct TaskResult {
 
 #[tokio::main]
 async fn main() {
-    // Define the Axum app
-    //
     let port: u16 = std::env::var("WORKER_PORT").unwrap_or("5001".to_string()).parse().unwrap();
 
-    let app = Router::new().route("/execute_task", post(handle_task));
+    let app = Router::new()
+        .route("/execute_task", post(handle_task))
+        .route("/health", get(health_check)); // ✅ Add health check
 
-    // Run the worker server
     let addr = format!("0.0.0.0:{}", port);
     let listener = TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app.into_make_service())
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .unwrap();
+    println!("Worker running on {}", addr);
+
+    axum::serve(listener, app.into_make_service()).await.unwrap();
 }
 
 async fn handle_task(Json(task): Json<Task>) -> Json<TaskResult> {
@@ -53,12 +51,11 @@ async fn handle_task(Json(task): Json<Task>) -> Json<TaskResult> {
     Json(TaskResult {
         id: task.id,
         status: "completed".to_string(),
-        result: result,
+        result,
     })
 }
 
-async fn shutdown_signal() {
-    use tokio::signal::unix::{signal, SignalKind};
-    let mut stream = signal(SignalKind::terminate()).expect("failed to install signal handler");
-    stream.recv().await;
+// ✅ New Health Check Endpoint for Kubernetes
+async fn health_check() -> &'static str {
+    "OK"
 }

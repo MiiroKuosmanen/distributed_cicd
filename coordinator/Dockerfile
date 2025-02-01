@@ -4,7 +4,7 @@ FROM rust:1.84 AS builder
 # Set working directory
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates curl wget # ✅ Added curl
 
 # Copy the Rust project files
 COPY . .
@@ -17,7 +17,7 @@ FROM ubuntu:22.04
 
 # Set working directory
 WORKDIR /app
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates curl wget  # ✅ Added curl
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/target/release/coordinator /app/coordinator
