@@ -25,10 +25,14 @@ struct TaskResult {
 #[tokio::main]
 async fn main() {
     // Define the Axum app
+    //
+    let port: u16 = std::env::var("WORKER_PORT").unwrap_or("5001".to_string()).parse().unwrap();
+
     let app = Router::new().route("/execute_task", post(handle_task));
 
     // Run the worker server
-    let listener = TcpListener::bind("0.0.0.0:5002").await.unwrap();
+    let addr = format!("0.0.0.0:{}", port);
+    let listener = TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app.into_make_service())
     .with_graceful_shutdown(shutdown_signal())
     .await

@@ -10,8 +10,8 @@ use reqwest::Client;
 
 pub async fn build_task(Extension(state): Extension<SharedState>, Json(payload): Json<Task>,) -> impl IntoResponse {
     let workers = vec![
-        "http://127.0.0.1:5001/execute_task", // Worker 1
-        "http://127.0.0.1:5002/execute_task", // Worker 2
+        "http://worker1:5001/execute_task", // Worker 1
+        "http://worker2:5002/execute_task", // Worker 2
     ];
     let mut round_robin_state = state.state.lock().await;
     let worker_url = workers[(*round_robin_state % workers.len() as u8) as usize];
@@ -23,15 +23,17 @@ pub async fn build_task(Extension(state): Extension<SharedState>, Json(payload):
     println!("Logical time is now: {}", clock.get_time());
     // Send the task to the worker
     let client = Client::new();
-    println!("json: {:?}", &payload);
+    //println!("json: {:?}", &payload);
     let task = Task {
         id: 1,
         repository: "Build this project".to_string(),
         branch: "test".to_string()
     };
+    println!("test1");
     let response = client.post(worker_url).json(&task).send().await;
-    //println!("Response: {:?}", test);
+    //println!("Response: {:?}", response.);
     // Handle worker response
+    println!("test2");
     match response {
         Ok(res) => {
             if res.status().is_success() {
