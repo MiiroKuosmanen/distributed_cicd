@@ -8,12 +8,12 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: worker
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 3 # Ensure at least 3 workers are always running
+  maxReplicas: 15 # Allow up to 15 replicas under high load
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 50
+          averageUtilization: 1 # Scale workers at 40% CPU usage

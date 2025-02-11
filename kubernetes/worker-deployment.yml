@@ -4,7 +4,7 @@ metadata:
   name: worker
   namespace: cicd
 spec:
-  replicas: 3
+  replicas: 3 # Ensure at least 3 workers start initially
   selector:
     matchLabels:
       app: worker
@@ -16,21 +16,36 @@ spec:
       containers:
         - name: worker
           image: maso778/worker:latest
-          imagePullPolicy: Always # Ensure Kubernetes pulls the latest version
+          imagePullPolicy: Always # Ensure latest image is pulled
           ports:
             - containerPort: 5001
           env:
             - name: WORKER_PORT
               value: "5001"
-          readinessProbe: # ✅ Readiness probe to ensure worker is ready
+
+          # ✅ Resource limits for better scaling
+          resources:
+            requests:
+              memory: "16Mi"
+              cpu: "10m"
+            limits:
+              memory: "32Mi"
+              cpu: "50m"
+
+          # ✅ Readiness probe (checks if worker is ready to accept traffic)
+          readinessProbe:
             httpGet:
               path: /health
               port: 5001
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10 # Wait longer before marking ready
+            periodSeconds: 5
+            failureThreshold: 6 # Allow more failures before removing from service
+
+          # ✅ Liveness probe (checks if worker is still running)
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 10 # Give worker time to start before checks
             periodSeconds: 10
-          livenessProbe: # ✅ Liveness probe to check if worker is alive
-            httpGet:
-              path: /health
-              port: 5001
-            initialDelaySeconds: 5
-            periodSeconds: 20
+            failureThreshold: 6 # Allow more failures before restarting worker

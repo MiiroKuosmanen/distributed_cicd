@@ -9,4 +9,7 @@ reqwest = { version = "0.12", features = ["json"] }
 redis = "0.28.1"
 tokio = { version = "1.43.0", features = ["full"] }
 serde = { version = "1.0.217", features = ["derive"] }
+prometheus = "0.13.4"
+prometheus_exporter = "0.8.5"
+lazy_static = "1.5.0"
 #shared = { path = "../shared" }

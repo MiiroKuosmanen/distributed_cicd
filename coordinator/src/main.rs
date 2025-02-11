@@ -10,6 +10,7 @@ use tokio::net::TcpListener;
 use crate::routes::create_routes;
 use tokio::sync::Mutex;
 use std::sync::Arc;
+use prometheus::{Encoder, TextEncoder, Registry};
 
 #[derive(Debug)]
 pub struct LogicalClock {

@@ -35,7 +35,7 @@ async fn main() -> Result<(), reqwest::Error> {
 
     // Send the task to the Coordinator
     let response = client
-        .post("http://127.0.0.1:53483/build_task")
+        .post("http://192.168.49.2:32000/build_task")
         .json(&task)
         .send()
         .await?;
