@@ -16,4 +16,4 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 1 # Scale workers at 40% CPU usage
+          averageUtilization: 40 # Scale workers at 40% CPU usage

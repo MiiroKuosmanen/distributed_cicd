@@ -1,12 +1,11 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Task {
     pub id: u32,
     pub repository: String,
-    pub branch: String,
+    pub task: String,
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TaskResult {

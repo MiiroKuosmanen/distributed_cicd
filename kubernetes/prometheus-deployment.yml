@@ -13,7 +13,7 @@ data:
           - targets: ['coordinator.cicd.svc.cluster.local:3000']
       - job_name: 'worker'
         static_configs:
-          - targets: ['worker.cicd.svc.cluster.local:5001']
+          - targets: ['worker-service.cicd.svc.cluster.local:5001']
 
 ---
 apiVersion: apps/v1

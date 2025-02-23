@@ -1,15 +1,10 @@
 [package]
-name = "distributed-ci-cd"
+name = "shared"
 version = "0.1.0"
 edition = "2021"
 
-[workspace]
-members = [
-    "client",
-    "coordinator",
-    "worker",
-    "shared"
-, "dagger_rust"]
-[workspace.dependencies]
+[dependencies]
+axum = "0.8.1"
+redis = "0.28.1"
 tokio = { version = "1.43.0", features = ["full"] }
 serde = { version = "1.0.217", features = ["derive"] }

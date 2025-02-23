@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker-service # The service name used in the coordinator
+  namespace: cicd
+spec:
+  selector:
+    app: worker # Must match labels in worker deployment
+  ports:
+    - protocol: TCP
+      port: 5001 # Port exposed inside the cluster
+      targetPort: 5001 # Port inside the worker container
+  type: ClusterIP # Internal access only

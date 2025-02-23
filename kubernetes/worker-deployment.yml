@@ -26,11 +26,11 @@ spec:
           # ✅ Resource limits for better scaling
           resources:
             requests:
-              memory: "16Mi"
-              cpu: "10m"
+              memory: "2Gi"
+              cpu: "2"
             limits:
-              memory: "32Mi"
-              cpu: "50m"
+              memory: "4Gi"
+              cpu: "4"
 
           # ✅ Readiness probe (checks if worker is ready to accept traffic)
           readinessProbe:

@@ -1,0 +1,16 @@
+  853* clamscan .
+  854* clamscan Cargo.toml
+  855* ls
+  856* clamscan /Cargo.toml
+  857* clamscan "Cargo.toml"
+  858* clamscan -c Cargo.toml
+  859* clamscan --recursive /\n
+  860* clamconf -g freshclam.conf > freshclam.conf\nclamconf -g clamd.conf > clamd.conf\nclamconf -g clamav-milter.conf > clamav-milter.conf
+  861* ls
+  862* rm -r clam*
+  863* rm -r fresh*
+  864* paru -R clamav
+  865  history
+  866  history 900
+  867  history
+  868  history > history.txt

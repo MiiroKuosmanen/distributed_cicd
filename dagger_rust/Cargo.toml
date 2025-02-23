@@ -1,0 +1,10 @@
+[package]
+name = "dagger_rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = "4.5.30"
+dagger-sdk = "0.16.1"
+eyre = "0.6.12"
+tokio.workspace = true

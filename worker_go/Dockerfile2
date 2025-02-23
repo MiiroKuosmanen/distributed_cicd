@@ -1,0 +1,37 @@
+# Stage 1: Build the Go application
+FROM golang:1.24 AS builder
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the Go modules manifest and download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the application
+COPY . .
+
+# Build the Go binary
+RUN go build -o worker worker.go
+
+# Stage 2: Create a minimal runtime image
+FROM ubuntu:22.04
+
+# Set working directory
+WORKDIR /app
+
+# Install required dependencies
+RUN apt-get update && apt-get install -y ca-certificates curl wget && rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/worker /app/worker
+
+# ✅ Now copy the `client` and `shared` directories inside the container
+COPY client /client
+COPY shared /shared
+COPY python /python
+# Expose the application port
+EXPOSE 5001 5002
+
+# Run the Worker
+CMD ["/app/worker"]

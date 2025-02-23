@@ -4,7 +4,10 @@
 DOCKER_USER="maso778"
 
 echo "🚀 Building and pushing Worker image..."
-docker build -t $DOCKER_USER/worker:latest worker/
+#docker build -t $DOCKER_USER/worker:latest worker/
+#docker push $DOCKER_USER/worker:latest
+
+docker build -t $DOCKER_USER/worker:latest worker_go/
 docker push $DOCKER_USER/worker:latest
 
 echo "🚀 Building and pushing Coordinator image..."

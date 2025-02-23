@@ -4,10 +4,10 @@ use crate::models::{Task, TaskResult};
 use crate::SharedState;
 use axum::http::StatusCode;
 use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use lazy_static::lazy_static;
+use prometheus::{Encoder, IntCounter, Registry, TextEncoder};
 use redis::Commands;
 use reqwest::Client;
-use prometheus::{Encoder, TextEncoder, Registry, IntCounter};
-use lazy_static::lazy_static;
 
 // Define global counters
 lazy_static! {
@@ -36,9 +36,11 @@ pub async fn build_task(
     Json(payload): Json<Task>,
 ) -> impl IntoResponse {
     HTTP_REQUESTS_TOTAL.inc(); // ✅ Track total requests
-    BUILD_TASKS_TOTAL.inc();   // ✅ Track build tasks processed
-    let worker_url = "http://worker:5001/execute_task"; // Use Kubernetes service
-    //let worker_url = "http://loca:5001/execute_task";
+    BUILD_TASKS_TOTAL.inc(); // ✅ Track build tasks processed
+                             //let worker_url = "http://worker:5001/execute_task"; // Use Kubernetes serviceS
+                             //let worker_url = "http://loca:5001/execute_task";
+    let worker_url = "http://worker-service.cicd.svc.cluster.local:5001/execute_task";
+
     let mut clock = state.clock.lock().await;
     clock.increment();
     println!("Logical time is now: {}", clock.get_time());
@@ -68,8 +70,10 @@ pub async fn build_task(
     }
 }
 
-
-pub async fn build_task2(Extension(state): Extension<SharedState>, Json(payload): Json<Task>,) -> impl IntoResponse {
+pub async fn build_task2(
+    Extension(state): Extension<SharedState>,
+    Json(payload): Json<Task>,
+) -> impl IntoResponse {
     let workers = vec![
         "http://worker1:5001/execute_task", // Worker 1
         "http://worker2:5002/execute_task", // Worker 2
@@ -88,7 +92,7 @@ pub async fn build_task2(Extension(state): Extension<SharedState>, Json(payload)
     let task = Task {
         id: 1,
         repository: "Build this project".to_string(),
-        branch: "test".to_string()
+        task: "code-review".to_string(),
     };
     println!("test1");
     let response = client.post(worker_url).json(&task).send().await;
