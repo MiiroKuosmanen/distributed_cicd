@@ -60,12 +60,12 @@ kubectl rollout restart deployment/worker -n cicd
 # Expose minikube
 minikube service coordinator --url -n cicd
 minikube ip
-curl -X POST http://192.168.49.2:32000/build_task \
+curl -X POST http://build_task \
 -H "Content-Type: application/json" \
 -d "{\"id\": 1, \"repository\":\"/python/app.py\", \"task\":\"code-review\"}"
 
-curl -X POST http://192.168.49.2:32000/build_task -H "Content-Type: application/json" -d '{"id": 1, "repository": "client", "task": "rust-build"}'
-curl -X POST http://192.168.49.2:32000/build_task -H "Content-Type: application/json" -d '{"id": 1, "repository": "client", "task": "python-lint2"}'
+curl -X POST http://--build_task -H "Content-Type: application/json" -d '{"id": 1, "repository": "client", "task": "rust-build"}'
+curl -X POST http://--:--/build_task -H "Content-Type: application/json" -d '{"id": 1, "repository": "client", "task": "python-lint2"}'
 kubectl logs -l app=worker -n cicd --tail=50
 
 
@@ -89,7 +89,7 @@ for i in {1..1000}; do
 done
 
 for i in {1..1000}; do
-  curl -X POST http://192.168.49.2:32000/build_task -H "Content-Type: application/json" -d '{"id": 3, "repository": "client", "task": "python-lint2"}'
+  curl -X POST http://1/build_task -H "Content-Type: application/json" -d '{"id": 3, "repository": "client", "task": "python-lint2"}'
 done
 # Go
 go mod tidy
@@ -141,9 +141,9 @@ kubectl delete pod worker-5f884bf6-x22wd -n cicd
 kubectl get pods -n cicd -w
 
 for i in {1..1000}; do
-  curl -X POST http://192.168.49.2:32000/build_task -H "Content-Type: application/json" -d '{"id": 3, "repository": "client", "task": "python-lint2"}'
+  curl -X POST http://--:32000/build_task -H "Content-Type: application/json" -d '{"id": 3, "repository": "client", "task": "python-lint2"}'
 done
 
-curl -X POST http://192.168.49.2:32000/build_task \
+curl -X POST http://--:32000/build_task \
 -H "Content-Type: application/json" \
 -d "{\"id\": 1, \"repository\":\"/python/app.py\", \"task\":\"code-review\"}" | jq
