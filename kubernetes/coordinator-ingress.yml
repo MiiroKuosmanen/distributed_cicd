@@ -5,7 +5,7 @@ metadata:
   namespace: cicd
 spec:
   rules:
-    - host: cicd.local # Change to your domain
+    - host: 52.166.109.93.nip.io
       http:
         paths:
           - path: /

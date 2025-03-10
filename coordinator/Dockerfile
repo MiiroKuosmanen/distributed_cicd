@@ -4,7 +4,7 @@ FROM rust:1.84 AS builder
 # Set working directory
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y ca-certificates curl wget # ✅ Added curl
+RUN apt-get update && apt-get install -y ca-certificates curl wget protobuf-compiler # ✅ Added curl
 
 # Copy the Rust project files
 COPY . .

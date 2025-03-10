@@ -40,12 +40,13 @@ kubectl create namespace cicd
 
 kubectl apply -f coordinator-deployment.yml
 kubectl apply -f worker-deployment.yml
-kubectl apply -f worker-hpa.yml
+kubectl apply -f config-hpa.yml
 kubectl apply -f coordinator-ingress.yml
 kubectl apply -f coordinator-service.yml
 kubectl apply -f monitoring-namespace.yml
 kubectl apply -f prometheus-deployment.yml
 kubectl apply -f grafana-deployment.yml
+kubectl apply -f worker-service.yml
 # Get kubernetes related things and test
 kubectl get pods -n cicd
 kubectl get svc -n cicd
@@ -60,12 +61,12 @@ kubectl rollout restart deployment/worker -n cicd
 # Expose minikube
 minikube service coordinator --url -n cicd
 minikube ip
-curl -X POST http://build_task \
+curl -X POST http://192.168.49.2:32000/build_task \
 -H "Content-Type: application/json" \
 -d "{\"id\": 1, \"repository\":\"/python/app.py\", \"task\":\"code-review\"}"
-
-curl -X POST http://--build_task -H "Content-Type: application/json" -d '{"id": 1, "repository": "client", "task": "rust-build"}'
-curl -X POST http://--:--/build_task -H "Content-Type: application/json" -d '{"id": 1, "repository": "client", "task": "python-lint2"}'
+http://192.168.49.2:32000
+curl -X POST http://http://192.168.49.2:32000/build_task -H "Content-Type: application/json" -d '{"id": 1, "repository": "client", "task": "rust-build"}'
+curl -X POST http://192.168.49.2:32000/build_task -H "Content-Type: application/json" -d '{"id": 1, "repository": "client", "task": "python-lint2"}'
 kubectl logs -l app=worker -n cicd --tail=50
 
 
@@ -144,6 +145,67 @@ for i in {1..1000}; do
   curl -X POST http://--:32000/build_task -H "Content-Type: application/json" -d '{"id": 3, "repository": "client", "task": "python-lint2"}'
 done
 
-curl -X POST http://--:32000/build_task \
+curl -X POST http://192.168.49.2:32000/build_task \
 -H "Content-Type: application/json" \
 -d "{\"id\": 1, \"repository\":\"/python/app.py\", \"task\":\"code-review\"}" | jq
+
+
+
+# New commands
+
+
+
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm install my-mongo-release bitnami/mongodb --namespace mongodb --create-namespace --set replicaSet.enabled=true
+kubectl port-forward svc/my-mongo-release-mongodb 27017:27017 -n mongodb
+kubectl get secret --namespace mongodb my-mongo-release-mongodb -o jsonpath="{.data.mongodb-root-password}" | base64 --decode
+mongosh --host localhost --port 27017 --authenticationDatabase admin -u root -p ---
+helm upgrade my-mongo-release bitnami/mongodb --namespace mongodb --set replicaSet.replicas=5
+
+kubectl get hpa worker-hpa -n cicd --watch
+
+kubectl get pods -n kube-system | grep metrics-server
+minikube ip
+kubectl describe svc coordinator -n cicd
+minikube service coordinator --url -n cicd
+kubectl get svc -n cicd
+
+kubectl top pods -n cicd
+kubectl top nodes
+minikube start -p your-profile-name
+minikube addons enable metrics-server
+minikube start -p cicd-kube --memory=8192 --cpus=8
+
+minikube dashboard
+
+kubectl get hpa worker-hpa -n cicd --watch
+
+minikube ip -p cicd-kube
+minikube tunnel -p cicd-kube
+
+etcd --listen-client-urls http://0.0.0.0:2379 --advertise-client-urls http://0.0.0.0:2379
+minikube addons enable default-storageclass
+minikube addons enable storage-provisioner
+
+use admin;
+db.getUsers();
+
+db.createUser({
+  user: "root",
+  pwd: "uUfHB4MekN",
+  roles: [{ role: "root", db: "admin" }]
+});
+
+locust -f hello.py --host=http://192.168.49.2:32000
+
+
+   helm repo add bitnami https://charts.bitnami.com/bitnami
+      helm install my-kafka-release bitnami/kafka
+
+      kubectl get pods -A -o wide
+
+http://prometheus.monitoring.svc.cluster.local:9090
+locust -f hello.py --host=http://192.168.49.2:32000
+
+http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/

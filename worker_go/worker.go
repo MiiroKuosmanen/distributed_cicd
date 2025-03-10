@@ -16,6 +16,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Task struct for incoming jobs
@@ -81,40 +83,50 @@ func handleTask(c *gin.Context) {
 
 	// Execute Task
 	var result string
-	var err error
+	var execErr error
 
 	start := time.Now()
 
 	switch task.Task {
 	case "rust-build":
-		result, err = runRustBuild(task.Repository)
+		result, execErr = runRustBuild(task.Repository)
 		rustBuildsTotal.Inc()
 	case "rust-build2":
 		result = "✅ Rust Build Successful" // New simple response
 		rustBuildsTotal.Inc()
 	case "rust-test":
-		result, err = runRustTests(task.Repository)
+		result, execErr = runRustTests(task.Repository)
 	case "python-lint":
-		result, err = runPythonLint(task.Repository)
+		result, execErr = runPythonLint(task.Repository)
 	case "python-lint2":
 		result = "✅ Python Linting Successful" // New simple response
 		pythonLintsTotal.Inc()
 	case "code-review":
-		result, err = runCodeReview(task.Repository) // New OpenAI Code Review
+		result, execErr = runCodeReview(task.Repository) // New OpenAI Code Review
 		codeReviewsTotal.Inc()
 	default:
-		result = "Unknown task type"
-		err = fmt.Errorf("invalid task type: %s", task.Task)
+		execErr = fmt.Errorf("invalid task type: %s", task.Task)
 	}
 
 	duration := time.Since(start)
 
-	if err != nil {
-		log.Printf("❌ Task %d failed: %s", task.ID, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// Check if task execution encountered an error
+	if execErr != nil {
+		log.Printf("❌ Task %d failed: %s", task.ID, execErr)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": execErr.Error()})
 		return
 	}
 
+	// Write completion to MongoDB
+	dbErr := writeTaskCompletionToDB(task, result)
+
+	if dbErr != nil {
+		log.Printf("❌ Failed to save task %d: %s", task.ID, dbErr)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save task result"})
+		return
+	}
+
+	log.Printf("✅ Task %d completed and saved", task.ID)
 	// Increment processed task count
 	mu.Lock()
 	tasksProcessed.Inc()
@@ -126,6 +138,7 @@ func handleTask(c *gin.Context) {
 		Status: "completed",
 		Result: fmt.Sprintf("%s (duration: %s)", result, duration),
 	}
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -334,6 +347,30 @@ func metricsHandler() gin.HandlerFunc {
 }
 
 func main() {
+	// Create a context
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var err error
+
+	// MongoDB URI
+	mongoURI := os.Getenv("MONGODB_URI")
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
+
+	if err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+
+	// Use a database and collection
+	taskCollection = client.Database("taskdb").Collection("finished_tasks")
+
+	// Ensure disconnection on main function return
+	defer func() {
+		if err = client.Disconnect(ctx); err != nil {
+			panic(err)
+		}
+	}()
+
 	port := os.Getenv("WORKER_PORT")
 	if port == "" {
 		port = "5001"
@@ -352,3 +389,24 @@ func main() {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
+
+func writeTaskCompletionToDB(task Task, result string) error {
+	finishedTask := FinishedTask{
+		Task:       task,
+		FinishTime: time.Now(),
+		Result:     result,
+	}
+
+	// Insert the finished task into MongoDB
+	_, err := taskCollection.InsertOne(context.TODO(), finishedTask)
+	return err
+}
+
+type FinishedTask struct {
+	Task       Task
+	FinishTime time.Time
+	Result     string
+}
+
+var client *mongo.Client
+var taskCollection *mongo.Collection

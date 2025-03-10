@@ -1,16 +1,19 @@
 from locust import HttpUser, task, between
 import json
 
-class CIUser(HttpUser):
-    wait_time = between(1, 3)  # Simulate users waiting 1-3 seconds before next request
+class MyUser(HttpUser):
+    wait_time = between(0.1, 0.3)  # Adjust wait time between requests if needed
 
     @task
-    def send_build_task(self):
-        headers = {"Content-Type": "application/json"}
-        payload = json.dumps({
+    def build_task(self):
+        payload = {
             "id": 1,
             "repository": "test-repo",
-            "branch": "main"
-        })
-        response = self.client.post("/build_task", data=payload, headers=headers)
-        print(f"Response: {response.status_code} {response.text}")
+            "task": "python-lint2"
+        }
+        self.client.post(
+            "/build_task",
+            data=json.dumps(payload),
+            headers={"Content-Type": "application/json"}
+        )
+    # Optionally, if you want to simulate high concurrency, you can adjust the user count and spawn rate in the locust command.

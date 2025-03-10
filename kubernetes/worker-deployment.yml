@@ -22,15 +22,17 @@ spec:
           env:
             - name: WORKER_PORT
               value: "5001"
+            - name: MONGODB_URI
+              value: "mongodb://root:uUfHB4MekN@my-mongo-release-mongodb-0.my-mongo-release-mongodb-headless.mongodb:27017/admin?replicaSet=rs0&authMechanism=SCRAM-SHA-256"
 
           # ✅ Resource limits for better scaling
           resources:
             requests:
-              memory: "2Gi"
-              cpu: "2"
+              cpu: "100m"
+              memory: "128Mi"
             limits:
-              memory: "4Gi"
-              cpu: "4"
+              cpu: "200m"
+              memory: "256Mi"
 
           # ✅ Readiness probe (checks if worker is ready to accept traffic)
           readinessProbe:

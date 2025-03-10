@@ -1,14 +1,24 @@
 use std::any::Any;
 
+use crate::discover_service;
 use crate::models::{Task, TaskResult};
+use crate::AppState;
 use crate::SharedState;
 use axum::http::StatusCode;
-use axum::{extract::Path, response::IntoResponse, Extension, Json};
+use axum::{
+    extract::{Extension, Json},
+    response::IntoResponse,
+    routing::post,
+    Router,
+};
+use etcd_client::Client as eClient;
+use futures::Future;
 use lazy_static::lazy_static;
 use prometheus::{Encoder, IntCounter, Registry, TextEncoder};
 use redis::Commands;
 use reqwest::Client;
-
+use std::sync::Arc;
+use tokio::sync::Mutex;
 // Define global counters
 lazy_static! {
     static ref HTTP_REQUESTS_TOTAL: IntCounter =
@@ -22,51 +32,63 @@ lazy_static! {
         reg
     };
 }
-
-// Function to expose Prometheus metrics
 pub async fn metrics_handler() -> String {
     let encoder = TextEncoder::new();
     let mut buffer = Vec::new();
     encoder.encode(&REGISTRY.gather(), &mut buffer).unwrap();
     String::from_utf8(buffer).unwrap()
 }
-
+//Extension(etcd_client): Extension<Arc<tokio::sync::Mutex<eClient>>>,
+#[axum_macros::debug_handler]
 pub async fn build_task(
     Extension(state): Extension<SharedState>,
     Json(payload): Json<Task>,
 ) -> impl IntoResponse {
-    HTTP_REQUESTS_TOTAL.inc(); // ✅ Track total requests
-    BUILD_TASKS_TOTAL.inc(); // ✅ Track build tasks processed
-                             //let worker_url = "http://worker:5001/execute_task"; // Use Kubernetes serviceS
-                             //let worker_url = "http://loca:5001/execute_task";
-    let worker_url = "http://worker-service.cicd.svc.cluster.local:5001/execute_task";
+    HTTP_REQUESTS_TOTAL.inc();
+    BUILD_TASKS_TOTAL.inc();
 
-    let mut clock = state.clock.lock().await;
-    clock.increment();
-    println!("Logical time is now: {}", clock.get_time());
+    // Discover the worker address
+    //let worker_address = discover_service(etcd_client.clone(), "worker-service").await;
+    let worker_address = Some("worker-service.cicd.svc.cluster.local:5001".to_string());
 
-    let client = Client::new();
-    let response = client.post(worker_url).json(&payload).send().await;
+    if let Some(worker_url) = worker_address {
+        let mut clock = state.clock.lock().await;
+        clock.increment();
+        println!("Logical time is now: {}", clock.get_time());
 
-    match response {
-        Ok(res) => {
-            if res.status().is_success() {
-                println!("Task submitted successfully to {}", worker_url);
-                let result: TaskResult = res.json().await.unwrap();
-                (StatusCode::OK, Json(result)).into_response()
-            } else {
-                (
-                    StatusCode::BAD_GATEWAY,
-                    format!("Worker failed with status: {}", res.status()),
-                )
-                    .into_response()
+        let client = Client::new();
+        let response = client
+            .post(format!("http://{}/execute_task", worker_url))
+            .json(&payload)
+            .send()
+            .await;
+
+        match response {
+            Ok(res) => {
+                if res.status().is_success() {
+                    println!("Task submitted successfully to {}", worker_url);
+                    let result: TaskResult = res.json().await.unwrap();
+                    (StatusCode::OK, Json(result)).into_response()
+                } else {
+                    (
+                        StatusCode::BAD_GATEWAY,
+                        format!("Worker failed with status: {}", res.status()),
+                    )
+                        .into_response()
+                }
             }
+            Err(err) => (
+                StatusCode::BAD_GATEWAY,
+                format!("Failed to connect to worker: {}", err),
+            )
+                .into_response(),
         }
-        Err(err) => (
-            StatusCode::BAD_GATEWAY,
-            format!("Failed to connect to worker: {}", err),
+    } else {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            "Worker service not found in service discovery",
         )
-            .into_response(),
+            .into_response()
     }
 }
 

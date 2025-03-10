@@ -4,13 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.8.1"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+axum = "0.7.9"
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+] }
 redis = "0.28.1"
-tokio = { version = "1.43.0", features = ["full"] }
+tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0.217", features = ["derive"] }
 #shared = { path = "../shared" }
 serde_json = "1.0.136"
 prometheus = "0.13.4"
 prometheus_exporter = "0.8.5"
 lazy_static = "1.5.0"
+etcd-client = "0.14.1"
+futures = "0.3.31"
+axum-macros = "0.5.0"
